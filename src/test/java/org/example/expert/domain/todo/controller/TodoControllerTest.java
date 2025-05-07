@@ -37,7 +37,7 @@ class TodoControllerTest {
         String title = "title";
         AuthUser authUser = new AuthUser(1L, "email", UserRole.USER);
         User user = User.fromAuthUser(authUser);
-        UserResponse userResponse = new UserResponse(user.getId(), user.getEmail());
+        UserResponse userResponse = new UserResponse(user.getId(), user.getEmail(), user.getNickname());
         TodoResponse response = new TodoResponse(
                 todoId,
                 title,
@@ -69,9 +69,9 @@ class TodoControllerTest {
 
         // then
         mockMvc.perform(get("/todos/{todoId}", todoId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(HttpStatus.OK.name()))
-                .andExpect(jsonPath("$.code").value(HttpStatus.OK.value()))
-                .andExpect(jsonPath("$.message").value("Todo not found"));
+                .andExpect(status().isBadRequest()) // 400 상태 코드
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.name())) // "BAD_REQUEST" 상태
+                .andExpect(jsonPath("$.code").value(HttpStatus.BAD_REQUEST.value())) // 400 코드
+                .andExpect(jsonPath("$.message").value("Todo not found")); // 예외 메시지
     }
 }
