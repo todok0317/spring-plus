@@ -15,18 +15,24 @@ import java.util.Optional;
 
 public interface TodoRepository extends JpaRepository<Todo, Long> {
 
-    @Query("SELECT t FROM Todo t " +
-            "JOIN FETCH t.user " +
-            "WHERE " +
-            "(:weather IS NULL OR t.weather = :weather) AND " +
-            "(:startDate IS NULL OR t.createdAt >= :startDate) AND " +
-            "(:endDate IS NULL OR t.createdAt <= :endDate)")
-    List<Todo> searchTodos(
+    @Query(
+            value = "SELECT t FROM Todo t " +
+                    "JOIN FETCH t.user " +
+                    "WHERE (:weather IS NULL OR t.weather = :weather) " +
+                    "AND (:startDate IS NULL OR t.modifiedAt >= :startDate) " +
+                    "AND (:endDate IS NULL OR t.modifiedAt <= :endDate)",
+            countQuery = "SELECT COUNT(t) FROM Todo t " +
+                    "WHERE (:weather IS NULL OR t.weather = :weather) " +
+                    "AND (:startDate IS NULL OR t.modifiedAt >= :startDate) " +
+                    "AND (:endDate IS NULL OR t.modifiedAt <= :endDate)"
+    )
+    Page<Todo> searchTodos(
             @Param("weather") String weather,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate,
-            Sort sort
+            Pageable pageable
     );
+
 
     @Query("SELECT t FROM Todo t " +
             "LEFT JOIN t.user " +

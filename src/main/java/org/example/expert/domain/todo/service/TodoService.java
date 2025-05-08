@@ -52,15 +52,11 @@ public class TodoService {
     }
 
     public Page<TodoResponse> getTodos(int page, int size, String weather, LocalDate startDate, LocalDate endDate) {
-        Sort sort = Sort.by(Sort.Direction.DESC, "modifiedAt");
-        List<Todo> filteredTodos = todoRepository.searchTodos(weather, startDate, endDate, sort);
+        // 수정일 기준으로 내림차순 정렬
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "modifiedAt"));
+        Page<Todo> todoPage = todoRepository.searchTodos(weather, startDate, endDate, pageable);
 
-        Pageable pageable = PageRequest.of(page - 1, size);
-        int start = (int) pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), filteredTodos.size());
-        List<Todo> pageTodos = filteredTodos.subList(start, end);
-
-        List<TodoResponse> content = pageTodos.stream()
+        List<TodoResponse> content = todoPage.stream()
                 .map(todo -> new TodoResponse(
                         todo.getId(),
                         todo.getTitle(),
@@ -76,7 +72,7 @@ public class TodoService {
                 ))
                 .toList();
 
-        return new PageImpl<>(content, pageable, filteredTodos.size());
+        return new PageImpl<>(content, pageable, todoPage.getTotalElements());
     }
 
     public TodoResponse getTodo(long todoId) {
