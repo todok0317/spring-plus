@@ -1,5 +1,6 @@
 package org.example.expert.domain.todo.service;
 
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.example.expert.client.WeatherClient;
 import org.example.expert.domain.common.dto.AuthUser;
@@ -7,16 +8,17 @@ import org.example.expert.domain.common.exception.InvalidRequestException;
 import org.example.expert.domain.todo.dto.request.TodoSaveRequest;
 import org.example.expert.domain.todo.dto.response.TodoResponse;
 import org.example.expert.domain.todo.dto.response.TodoSaveResponse;
+import org.example.expert.domain.todo.entity.QTodo;
 import org.example.expert.domain.todo.entity.Todo;
 import org.example.expert.domain.todo.repository.TodoRepository;
 import org.example.expert.domain.user.dto.response.UserResponse;
+import org.example.expert.domain.user.entity.QUser;
 import org.example.expert.domain.user.entity.User;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -26,6 +28,7 @@ public class TodoService {
 
     private final TodoRepository todoRepository;
     private final WeatherClient weatherClient;
+    private final JPAQueryFactory jpaQueryFactory;
 
 
     @Transactional
@@ -76,19 +79,28 @@ public class TodoService {
     }
 
     public TodoResponse getTodo(long todoId) {
-        Todo todo = todoRepository.findByIdWithUser(todoId)
-                .orElseThrow(() -> new InvalidRequestException("Todo not found"));
+        QTodo todo = QTodo.todo;
 
-        User user = todo.getUser();
+        Todo result = jpaQueryFactory
+                .selectFrom(todo)
+                .join(todo.user, QUser.user).fetchJoin()
+                .where(todo.id.eq(todoId))
+                .fetchOne();
+
+        if (result == null) {
+            throw new InvalidRequestException("Todo not found");
+        }
+
+        User user = result.getUser();
 
         return new TodoResponse(
-                todo.getId(),
-                todo.getTitle(),
-                todo.getContents(),
-                todo.getWeather(),
+                result.getId(),
+                result.getTitle(),
+                result.getContents(),
+                result.getWeather(),
                 new UserResponse(user.getId(), user.getEmail(), user.getNickname()),
-                todo.getCreatedAt(),
-                todo.getModifiedAt()
+                result.getCreatedAt(),
+                result.getModifiedAt()
         );
     }
 }
